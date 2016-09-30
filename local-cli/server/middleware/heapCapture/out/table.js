@@ -75,81 +75,22 @@ dropFilter:React.PropTypes.func.isRequired,
 dropAction:React.PropTypes.func.isRequired};var
 
 
-Table=function(_React$Component3){_inherits(Table,_React$Component3);// eslint-disable-line no-unused-vars
-function Table(props){_classCallCheck(this,Table);var _this3=_possibleConstructorReturn(this,Object.getPrototypeOf(Table).call(this,
+TableHeader=function(_React$Component3){_inherits(TableHeader,_React$Component3);
+function TableHeader(props){_classCallCheck(this,TableHeader);return _possibleConstructorReturn(this,Object.getPrototypeOf(TableHeader).call(this,
 props));
-_this3.state={
-aggrow:props.aggrow,
-viewport:{top:0,height:100}};return _this3;
-
-}_createClass(Table,[{key:'scroll',value:function scroll(
-
-e){
-var viewport=e.target;
-var top=Math.floor((viewport.scrollTop-viewport.clientHeight*1.0)/rowHeight);
-var height=Math.ceil(viewport.clientHeight*3.0/rowHeight);
-this.state.viewport.top=top;
-this.state.viewport.height=height;
-this.forceUpdate();
-}},{key:'dropAggregator',value:function dropAggregator(
-
-s,d){
-var aggrow=this.state.aggrow;
-console.log('dropped '+s+' to '+d);
-if(s.startsWith('aggregate:active:')){
-var sIndex=parseInt(s.substr(17),10);
-var dIndex=-1;
-var active=aggrow.getActiveAggregators();
-var dragged=active[sIndex];
-if(d.startsWith('aggregate:insert:')){
-dIndex=parseInt(d.substr(17),10);
-}else if(d==='divider:insert'){
-dIndex=active.length;
-}else{
-throw'not allowed to drag '+s+' to '+d;
-}
-if(dIndex>sIndex){
-dIndex--;
-}
-active.splice(sIndex,1);
-active.splice(dIndex,0,dragged);
-aggrow.setActiveAggregators(active);
-this.forceUpdate();
-}else if(s.startsWith('expander:active:')){
-var _sIndex=parseInt(s.substr(16),10);
-var _dIndex=-1;
-var _active=aggrow.getActiveExpanders();
-var _dragged=_active[_sIndex];
-if(d.startsWith('expander:insert:')){
-_dIndex=parseInt(d.substr(16),10);
-}else if(d==='divider:insert'){
-_dIndex=0;
-}else{
-throw'not allowed to drag '+s+' to '+d;
-}
-if(_dIndex>_sIndex){
-_dIndex--;
-}
-_active.splice(_sIndex,1);
-_active.splice(_dIndex,0,_dragged);
-aggrow.setActiveExpanders(_active);
-this.forceUpdate();
-}
-}},{key:'render',value:function render()
-
-{var _this4=this;
-var headers=[];
-var aggrow=this.state.aggrow;
+}_createClass(TableHeader,[{key:'render',value:function render()
+{
+var aggrow=this.props.aggrow;
 var aggregators=aggrow.getActiveAggregators();
 var expanders=aggrow.getActiveExpanders();
-// aggregators
+var headers=[];
 for(var i=0;i<aggregators.length;i++){
 var name=aggrow.getAggregatorName(aggregators[i]);
 headers.push(
 React.createElement(DropTarget,{
 id:'aggregate:insert:'+i.toString(),
-dropFilter:function dropFilter(){return true;},
-dropAction:function dropAction(s,d){_this4.dropAggregator(s,d);}},
+dropFilter:function dropFilter(s){return s.startsWith('aggregate');},
+dropAction:this.props.dropAction},
 
 React.createElement('div',{style:{
 width:'16px',
@@ -165,8 +106,8 @@ React.createElement('div',{style:{width:'128px',textAlign:'center',flexShrink:'0
 headers.push(
 React.createElement(DropTarget,{
 id:'divider:insert',
-dropFilter:function dropFilter(){return true;},
-dropAction:function dropAction(s,d){_this4.dropAggregator(s,d);}},
+dropFilter:function dropFilter(s){return s.startsWith('aggregate')||s.startsWith('expander');},
+dropAction:this.props.dropAction},
 
 React.createElement('div',{style:{
 width:'16px',
@@ -193,7 +134,7 @@ headers.push(
 React.createElement(DropTarget,{
 id:'expander:insert:'+(_i+1).toString(),
 dropFilter:function dropFilter(){return true;},
-dropAction:function dropAction(s,d){_this4.dropAggregator(s,d);}},
+dropAction:this.props.dropAction},
 
 React.createElement('div',{style:{
 height:'inherit',
@@ -205,9 +146,7 @@ sep)));
 
 
 }
-
 return(
-React.createElement('div',{style:{width:'100%',height:'100%',display:'flex',flexDirection:'column'}},
 React.createElement('div',{style:{
 width:'100%',
 height:'26px',
@@ -216,13 +155,173 @@ flexDirection:'row',
 alignItems:'center',
 borderBottom:'2px solid black'}},
 
-headers),
+headers));
 
-React.createElement('div',{style:{
+
+}}]);return TableHeader;}(React.Component);
+
+
+TableHeader.propTypes={
+aggrow:React.PropTypes.object.isRequired,
+dropAction:React.PropTypes.func.isRequired};var
+
+
+Table=function(_React$Component4){_inherits(Table,_React$Component4);// eslint-disable-line no-unused-vars
+function Table(props){_classCallCheck(this,Table);var _this4=_possibleConstructorReturn(this,Object.getPrototypeOf(Table).call(this,
+props));
+_this4.state={
+aggrow:props.aggrow,
+viewport:{top:0,height:100},
+cursor:0};return _this4;
+
+}_createClass(Table,[{key:'scroll',value:function scroll(
+
+e){
+var viewport=e.target;
+var top=Math.floor((viewport.scrollTop-viewport.clientHeight*1.0)/rowHeight);
+var height=Math.ceil(viewport.clientHeight*3.0/rowHeight);
+if(top!==this.state.viewport.top||height!==this.state.viewport.height){
+this.setState({viewport:{top:top,height:height}});
+}
+}},{key:'_contractRow',value:function _contractRow(
+
+row){
+var newCursor=this.state.cursor;
+if(newCursor>row.top&&newCursor<row.top+row.height){// in contracted section
+newCursor=row.top;
+}else if(newCursor>=row.top+row.height){// below contracted section
+newCursor-=row.height-1;
+}
+this.state.aggrow.contract(row);
+this.setState({cursor:newCursor});
+console.log('-'+row.top);
+}},{key:'_expandRow',value:function _expandRow(
+
+row){
+var newCursor=this.state.cursor;
+this.state.aggrow.expand(row);
+if(newCursor>row.top){// below expanded section
+newCursor+=row.height-1;
+}
+this.setState({cursor:newCursor});
+console.log('+'+row.top);
+}},{key:'_keepCursorInViewport',value:function _keepCursorInViewport()
+
+
+
+{
+if(this._scrollDiv){
+var cursor=this.state.cursor;
+var scrollDiv=this._scrollDiv;
+if(cursor*rowHeight<scrollDiv.scrollTop+scrollDiv.clientHeight*0.1){
+scrollDiv.scrollTop=cursor*rowHeight-scrollDiv.clientHeight*0.1;
+}else if((cursor+1)*rowHeight>scrollDiv.scrollTop+scrollDiv.clientHeight*0.9){
+scrollDiv.scrollTop=(cursor+1)*rowHeight-scrollDiv.clientHeight*0.9;
+}
+}
+}},{key:'keydown',value:function keydown(
+
+e){
+var aggrow=this.state.aggrow;
+var cursor=this.state.cursor;
+var row=aggrow.getRows(cursor,1)[0];
+switch(e.keyCode){
+case 38:// up
+if(cursor>0){
+this.setState({cursor:cursor-1});
+this._keepCursorInViewport();
+}
+e.preventDefault();
+break;
+case 40:// down
+if(cursor<aggrow.getHeight()-1){
+this.setState({cursor:cursor+1});
+this._keepCursorInViewport();
+}
+e.preventDefault();
+break;
+case 37:// left
+if(aggrow.canContract(row)){
+this._contractRow(row);
+}else if(aggrow.getRowIndent(row)>0){
+var indent=aggrow.getRowIndent(row)-1;
+while(aggrow.getRowIndent(row)>indent){
+cursor--;
+row=aggrow.getRows(cursor,1)[0];
+}
+this.setState({cursor:cursor});
+this._keepCursorInViewport();
+}
+e.preventDefault();
+break;
+case 39:// right
+if(aggrow.canExpand(row)){
+this._expandRow(row);
+}else if(cursor<aggrow.getHeight()-1){
+this.setState({cursor:cursor+1});
+this._keepCursorInViewport();
+}
+e.preventDefault();
+break;}
+
+}},{key:'dropAction',value:function dropAction(
+
+s,d){
+var aggrow=this.state.aggrow;
+console.log('dropped '+s+' to '+d);
+if(s.startsWith('aggregate:active:')){
+var sIndex=parseInt(s.substr(17),10);
+var dIndex=-1;
+var active=aggrow.getActiveAggregators();
+var dragged=active[sIndex];
+if(d.startsWith('aggregate:insert:')){
+dIndex=parseInt(d.substr(17),10);
+}else if(d==='divider:insert'){
+dIndex=active.length;
+}else{
+throw'not allowed to drag '+s+' to '+d;
+}
+if(dIndex>sIndex){
+dIndex--;
+}
+active.splice(sIndex,1);
+active.splice(dIndex,0,dragged);
+aggrow.setActiveAggregators(active);
+this.setState({cursor:0});
+}else if(s.startsWith('expander:active:')){
+var _sIndex=parseInt(s.substr(16),10);
+var _dIndex=-1;
+var _active=aggrow.getActiveExpanders();
+var _dragged=_active[_sIndex];
+if(d.startsWith('expander:insert:')){
+_dIndex=parseInt(d.substr(16),10);
+}else if(d==='divider:insert'){
+_dIndex=0;
+}else{
+throw'not allowed to drag '+s+' to '+d;
+}
+if(_dIndex>_sIndex){
+_dIndex--;
+}
+_active.splice(_sIndex,1);
+_active.splice(_dIndex,0,_dragged);
+aggrow.setActiveExpanders(_active);
+this.setState({cursor:0});
+}
+}},{key:'render',value:function render()
+
+{var _this5=this;
+return(
+React.createElement('div',{style:{width:'100%',height:'100%',display:'flex',flexDirection:'column'}},
+React.createElement(TableHeader,{aggrow:this.state.aggrow,dropAction:function dropAction(s,d){return _this5.dropAction(s,d);}}),
+React.createElement('div',{
+style:{
 width:'100%',
 flexGrow:'1',
 overflow:'scroll'},
-onScroll:function onScroll(e){return _this4.scroll(e);}},
+
+onScroll:function onScroll(e){return _this5.scroll(e);},
+ref:function ref(div){_this5._scrollDiv=div;}},
 React.createElement('div',{style:{position:'relative'}},
 this.renderVirtualizedRows()))));
 
@@ -231,7 +330,7 @@ this.renderVirtualizedRows()))));
 
 }},{key:'renderVirtualizedRows',value:function renderVirtualizedRows()
 
-{var _this5=this;
+{var _this6=this;
 var aggrow=this.state.aggrow;
 var viewport=this.state.viewport;
 var rows=aggrow.getRows(viewport.top,viewport.height);
@@ -241,12 +340,12 @@ position:'absolute',
 width:'100%',
 height:(rowHeight*(aggrow.getHeight()+20)).toString()+'px'}},
 
-rows.map(function(child){return _this5.renderRow(child);})));
+rows.map(function(child){return _this6.renderRow(child);})));
 
 
 }},{key:'renderRow',value:function renderRow(
 
-row){var _this6=this;
+row){var _this7=this;
 if(row===null){
 return null;
 }
@@ -258,6 +357,9 @@ var indent=4+aggrow.getRowIndent(row)*treeIndent;
 var aggregates=aggrow.getActiveAggregators();
 if(row.parent!==null&&row.parent.expander%2===0){
 bg='white';
+}
+if(row.top===this.state.cursor){
+bg='lightblue';
 }
 for(var i=0;i<aggregates.length;i++){
 var aggregate=aggrow.getRowAggregate(row,i);
@@ -288,42 +390,76 @@ flexShrink:'0'}}));
 
 
 if(aggrow.canExpand(row)){
-rowText+='+';
+columns.push(
+React.createElement('div',{
+style:{
+marginLeft:indent.toString()+'px',
+flexShrink:'0',
+width:'12px',
+textAlign:'center',
+border:'1px solid gray'},
+
+onClick:function onClick(){return _this7._expandRow(row);}},'+'));
+
+
 }else if(aggrow.canContract(row)){
-rowText+='-';
+columns.push(
+React.createElement('div',{
+style:{
+marginLeft:indent.toString()+'px',
+flexShrink:'0',
+width:'12px',
+textAlign:'center',
+border:'1px solid gray'},
+
+onClick:function onClick(){return _this7._contractRow(row);}},'-'));
+
+
 }else{
-rowText+=' ';
+columns.push(
+React.createElement('div',{
+style:{
+marginLeft:indent.toString()+'px'}}));
+
+
+
 }
 rowText+=aggrow.getRowLabel(row);
 columns.push(
 React.createElement('div',{style:{
-marginLeft:indent.toString()+'px',
 flexShrink:'0',
-whiteSpace:'nowrap'}},
+whiteSpace:'nowrap',
+marginRight:'20px'}},
 
 rowText));
 
 
 return(
-React.createElement('div',{style:{
+React.createElement('div',{
+key:row.top,
+style:{
 position:'absolute',
 height:(rowHeight-1).toString()+'px',
 top:(rowHeight*row.top).toString()+'px',
 display:'flex',
 flexDirection:'row',
+alignItems:'center',
 backgroundColor:bg,
 borderBottom:'1px solid gray'},
 
 onClick:function onClick(){
-if(aggrow.canExpand(row)){
-aggrow.expand(row);
-_this6.forceUpdate();
-}else if(aggrow.canContract(row)){
-aggrow.contract(row);
-_this6.forceUpdate();
-}
+_this7.setState({cursor:row.top});
 }},
 columns));
 
 
+}},{key:'componentDidMount',value:function componentDidMount()
+
+{
+this.keydown=this.keydown.bind(this);
+document.body.addEventListener('keydown',this.keydown);
+}},{key:'componentWillUnmount',value:function componentWillUnmount()
+
+{
+document.body.removeEventListener('keydown',this.keydown);
 }}]);return Table;}(React.Component);// @generated

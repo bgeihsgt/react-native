@@ -484,6 +484,7 @@ var Navigator = React.createClass({
    */
   immediatelyResetRouteStack: function(nextRouteStack) {
     var destIndex = nextRouteStack.length - 1;
+    this._emitWillFocus(nextRouteStack[destIndex]);
     this.setState({
       routeStack: nextRouteStack,
       sceneConfigStack: nextRouteStack.map(
@@ -495,7 +496,10 @@ var Navigator = React.createClass({
       transitionQueue: [],
     }, () => {
       this._handleSpringUpdate();
-      this._navBar && this._navBar.immediatelyRefresh();
+      var navBar = this._navBar;
+      if (navBar && navBar.immediatelyRefresh) {
+        navBar.immediatelyRefresh();
+      }
       this._emitDidFocus(this.state.routeStack[this.state.presentedIndex]);
     });
   },
@@ -1245,7 +1249,7 @@ var Navigator = React.createClass({
         key={'scene_' + getRouteID(route)}
         ref={'scene_' + i}
         onStartShouldSetResponderCapture={() => {
-          return (this.state.transitionFromIndex != null) || (this.state.transitionFromIndex != null);
+          return (this.state.transitionFromIndex != null);
         }}
         pointerEvents={disabledScenePointerEvents}
         style={[styles.baseScene, this.props.sceneStyle, disabledSceneStyle]}>
